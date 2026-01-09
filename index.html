@@ -1,94 +1,146 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <style>
-        body { background: transparent; margin: 0; overflow: hidden; font-family: sans-serif; user-select: none; color: white; }
-        .screen { display: flex; justify-content: space-between; align-items: center; width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; }
+        body { background: transparent; margin: 0; overflow: hidden; font-family: sans-serif; user-select: none; color: white; width: 100vw; height: 100vh; }
         
-        /* Botões Estilo PPSSPP */
-        .btn {
-            width: 50px; height: 50px; border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            background: rgba(0, 0, 0, 0.3); transition: all 0.05s; font-weight: bold;
+        /* Menu flutuante que aparece ao editar */
+        #edit-menu {
+            position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; background: rgba(0,0,0,0.8); padding: 10px 20px;
+            border-radius: 0 0 15px 15px; border: 1px solid #00a2ff; z-index: 1000;
+            transition: top 0.3s ease;
         }
-        /* Efeito de brilho para botões e analógicos */
-        .active { background: rgba(0, 162, 255, 0.8) !important; border-color: #00f2ff !important; box-shadow: 0 0 15px #0096ff; transform: scale(1.1); }
+        #edit-menu.show { top: 0; }
+        .menu-btn { padding: 8px 15px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; }
+        .save-btn { background: #28a745; }
+        .reset-btn { background: #dc3545; }
 
-        /* Analógicos */
-        .stick-area {
-            width: 100px; height: 100px; border: 2px dashed rgba(255,255,255,0.2);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 10px;
+        /* Grupos e Botões */
+        .group { position: absolute; touch-action: none; display: flex; align-items: center; justify-content: center; z-index: 20; }
+        .btn-core {
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.4);
+            font-weight: bold; border-radius: 50%; width: 60px; height: 60px;
         }
-        .stick {
-            width: 40px; height: 40px; background: rgba(255,255,255,0.2);
-            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative;
-            transition: background 0.1s, box-shadow 0.1s;
-        }
-
-        .side { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .dpad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 5px; }
-        .actions { display: grid; grid-template-areas: ". tri ." "sq . cir" ". x ."; gap: 10px; }
-        
-        #btn-12 { grid-area: up; } #btn-13 { grid-area: down; } #btn-14 { grid-area: left; } #btn-15 { grid-area: right; }
-        #btn-3 { grid-area: tri; } #btn-0 { grid-area: x; } #btn-2 { grid-area: sq; } #btn-1 { grid-area: cir; }
-        
-        .center { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 50px; }
-        .row { display: flex; gap: 15px; }
+        .dpad-grid, .action-grid { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 10px; }
+        .rect { border-radius: 8px; width: 70px; height: 35px; font-size: 10px; position: absolute; background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.4); display: flex; align-items: center; justify-content: center; }
+        .active { background: rgba(0, 162, 255, 0.8) !important; border-color: #00f2ff !important; box-shadow: 0 0 15px #0096ff; }
+        .stick-area { width: 100px; height: 100px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 50%; position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); }
+        .stick { width: 40%; height: 40%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none; }
     </style>
 </head>
 <body>
 
-<div class="screen">
-    <div class="side">
-        <div id="btn-6" class="btn" style="width:70px; border-radius:10px;">L2</div>
-        <div id="btn-4" class="btn" style="width:70px; border-radius:10px;">L1</div>
-        <div class="dpad">
-            <div id="btn-12" class="btn">↑</div>
-            <div id="btn-14" class="btn">←</div>
-            <div id="btn-15" class="btn">→</div>
-            <div id="btn-13" class="btn">↓</div>
-        </div>
-        <div class="stick-area"><div id="stick-0" class="stick"></div></div>
-    </div>
-
-    <div class="center">
-        <div class="row">
-            <div id="btn-8" class="btn" style="width:40px; height:25px; border-radius:5px; font-size:9px;">SHARE</div>
-            <div id="btn-9" class="btn" style="width:40px; height:25px; border-radius:5px; font-size:9px;">OPT</div>
-        </div>
-        <div id="btn-17" class="btn" style="width:120px; height:60px; border-radius:15px;">TOUCHPAD</div>
-        <div id="btn-16" class="btn" style="width:40px; height:40px; border-radius:50%; border-color: orange;">PS</div>
-    </div>
-
-    <div class="side">
-        <div id="btn-7" class="btn" style="width:70px; border-radius:10px;">R2</div>
-        <div id="btn-5" class="btn" style="width:70px; border-radius:10px;">R1</div>
-        <div class="actions">
-            <div id="btn-3" class="btn">Δ</div>
-            <div id="btn-2" class="btn">□</div>
-            <div id="btn-1" class="btn">○</div>
-            <div id="btn-0" class="btn">×</div>
-        </div>
-        <div class="stick-area"><div id="stick-1" class="stick"></div></div>
-    </div>
+<div id="edit-menu">
+    <button class="menu-btn save-btn" onclick="confirmSave()">SALVAR</button>
+    <button class="menu-btn reset-btn" onclick="resetLayout()">RESETAR</button>
 </div>
 
-<script>
-    function update() {
-        const gamepads = navigator.getGamepads();
-        if (gamepads[0]) {
-            const gp = gamepads[0];
+<div id="group-dpad" class="group dpad-grid" style="left: 10%; top: 30%;">
+    <div id="btn-12" class="btn-core" style="grid-area: up;">↑</div>
+    <div id="btn-14" class="btn-core" style="grid-area: left;">←</div>
+    <div id="btn-15" class="btn-core" style="grid-area: right;">→</div>
+    <div id="btn-13" class="btn-core" style="grid-area: down;">↓</div>
+</div>
 
+<div id="group-actions" class="group action-grid" style="right: 10%; top: 30%;">
+    <div id="btn-3" class="btn-core" style="grid-area: up;">Δ</div>
+    <div id="btn-2" class="btn-core" style="grid-area: left;">□</div>
+    <div id="btn-1" class="btn-core" style="grid-area: right;">○</div>
+    <div id="btn-0" class="btn-core" style="grid-area: down;">×</div>
+</div>
+
+<div id="btn-6" class="group rect" style="left: 5%; top: 5%;">L2</div>
+<div id="btn-4" class="group rect" style="left: 5%; top: 15%;">L1</div>
+<div id="btn-7" class="group rect" style="right: 5%; top: 5%;">R2</div>
+<div id="btn-5" class="group rect" style="right: 5%; top: 15%;">R1</div>
+<div id="btn-8" class="group rect" style="left: 35%; bottom: 20px;">SHARE</div>
+<div id="btn-16" class="group btn-core" style="left: 47%; bottom: 20px; border-color: orange; width: 45px; height: 45px;">PS</div>
+<div id="btn-9" class="group rect" style="left: 58%; bottom: 20px;">OPT</div>
+
+<div id="stick-area-0" class="group stick-area" style="left: 10%; bottom: 15%;"><div id="stick-0" class="stick"></div></div>
+<div id="stick-area-1" class="group stick-area" style="right: 10%; bottom: 15%;"><div id="stick-1" class="stick"></div></div>
+
+<script>
+    const groups = document.querySelectorAll('.group');
+    const menu = document.getElementById('edit-menu');
+    let hasChanged = false;
+
+    window.onload = () => {
+        groups.forEach(el => {
+            const saved = localStorage.getItem(el.id);
+            if (saved) {
+                const config = JSON.parse(saved);
+                el.style.left = config.left;
+                el.style.top = config.top;
+                el.style.transform = `scale(${config.scale || 1})`;
+                el.dataset.scale = config.scale || 1;
+            }
+        });
+    };
+
+    function showMenu() {
+        hasChanged = true;
+        menu.classList.add('show');
+    }
+
+    function confirmSave() {
+        groups.forEach(el => {
+            localStorage.setItem(el.id, JSON.stringify({
+                left: el.style.left,
+                top: el.style.top,
+                scale: el.dataset.scale || 1
+            }));
+        });
+        menu.classList.remove('show');
+        hasChanged = false;
+    }
+
+    function resetLayout() {
+        localStorage.clear();
+        location.reload();
+    }
+
+    groups.forEach(el => {
+        let isDragging = false;
+
+        el.onpointerdown = (e) => {
+            isDragging = true;
+            el.setPointerCapture(e.pointerId);
+            showMenu();
+        };
+
+        el.onpointermove = (e) => {
+            if (!isDragging) return;
+            el.style.left = (el.offsetLeft + e.movementX) + 'px';
+            el.style.top = (el.offsetTop + e.movementY) + 'px';
+            el.style.right = 'auto';
+            el.style.bottom = 'auto';
+        };
+
+        el.onpointerup = () => isDragging = false;
+
+        el.addEventListener('dblclick', () => {
+            showMenu();
+            let s = parseFloat(el.dataset.scale || 1);
+            s += 0.2;
+            if (s > 2) s = 0.6; 
+            el.dataset.scale = s;
+            el.style.transform = `scale(${s})`;
+        });
+    });
+
+    function update() {
+        const gps = navigator.getGamepads();
+        if (gps[0]) {
+            const gp = gps[0];
             gp.buttons.forEach((btn, i) => {
                 const el = document.getElementById(`btn-${i}`);
-                if (el) {
-                    if (btn.pressed) el.classList.add('active');
-                    else el.classList.remove('active');
-                }
+                if (el) btn.pressed ? el.classList.add('active') : el.classList.remove('active');
             });
-
-            // Analógicos + Lógica L3/R3 integrada no próprio stick
             updateStick('stick-0', gp.axes[0], gp.axes[1], gp.buttons[10].pressed); 
             updateStick('stick-1', gp.axes[2], gp.axes[3], gp.buttons[11].pressed);
         }
@@ -97,20 +149,13 @@
 
     function updateStick(id, x, y, isPressed) {
         const stick = document.getElementById(id);
-        const moveMax = 30; 
-        stick.style.transform = `translate(${x * moveMax}px, ${y * moveMax}px)`;
-        
-        if (isPressed) {
-            stick.classList.add('active');
-        } else {
-            stick.classList.remove('active');
+        if (stick) {
+            stick.style.transform = `translate(${x * 20}px, ${y * 20}px)`;
+            isPressed ? stick.classList.add('active') : stick.classList.remove('active');
         }
     }
 
-    window.addEventListener("gamepadconnected", () => {
-        document.body.style.background = "rgba(0,0,0,0.1)"; 
-        update();
-    });
+    window.addEventListener("gamepadconnected", update);
 </script>
 </body>
 </html>
