@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { background: transparent; margin: 0; overflow: hidden; font-family: sans-serif; user-select: none; color: white; }
+        .screen { display: flex; justify-content: space-between; align-items: center; width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; }
+        
+        /* Botões Estilo PPSSPP */
+        .btn {
+            width: 50px; height: 50px; border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.3); transition: all 0.05s; font-weight: bold;
+        }
+        /* Efeito de brilho para botões e analógicos */
+        .active { background: rgba(0, 162, 255, 0.8) !important; border-color: #00f2ff !important; box-shadow: 0 0 15px #0096ff; transform: scale(1.1); }
+
+        /* Analógicos */
+        .stick-area {
+            width: 100px; height: 100px; border: 2px dashed rgba(255,255,255,0.2);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 10px;
+        }
+        .stick {
+            width: 40px; height: 40px; background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; position: relative;
+            transition: background 0.1s, box-shadow 0.1s;
+        }
+
+        .side { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .dpad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 5px; }
+        .actions { display: grid; grid-template-areas: ". tri ." "sq . cir" ". x ."; gap: 10px; }
+        
+        #btn-12 { grid-area: up; } #btn-13 { grid-area: down; } #btn-14 { grid-area: left; } #btn-15 { grid-area: right; }
+        #btn-3 { grid-area: tri; } #btn-0 { grid-area: x; } #btn-2 { grid-area: sq; } #btn-1 { grid-area: cir; }
+        
+        .center { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 50px; }
+        .row { display: flex; gap: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="screen">
+    <div class="side">
+        <div id="btn-6" class="btn" style="width:70px; border-radius:10px;">L2</div>
+        <div id="btn-4" class="btn" style="width:70px; border-radius:10px;">L1</div>
+        <div class="dpad">
+            <div id="btn-12" class="btn">↑</div>
+            <div id="btn-14" class="btn">←</div>
+            <div id="btn-15" class="btn">→</div>
+            <div id="btn-13" class="btn">↓</div>
+        </div>
+        <div class="stick-area"><div id="stick-0" class="stick"></div></div>
+    </div>
+
+    <div class="center">
+        <div class="row">
+            <div id="btn-8" class="btn" style="width:40px; height:25px; border-radius:5px; font-size:9px;">SHARE</div>
+            <div id="btn-9" class="btn" style="width:40px; height:25px; border-radius:5px; font-size:9px;">OPT</div>
+        </div>
+        <div id="btn-17" class="btn" style="width:120px; height:60px; border-radius:15px;">TOUCHPAD</div>
+        <div id="btn-16" class="btn" style="width:40px; height:40px; border-radius:50%; border-color: orange;">PS</div>
+    </div>
+
+    <div class="side">
+        <div id="btn-7" class="btn" style="width:70px; border-radius:10px;">R2</div>
+        <div id="btn-5" class="btn" style="width:70px; border-radius:10px;">R1</div>
+        <div class="actions">
+            <div id="btn-3" class="btn">Δ</div>
+            <div id="btn-2" class="btn">□</div>
+            <div id="btn-1" class="btn">○</div>
+            <div id="btn-0" class="btn">×</div>
+        </div>
+        <div class="stick-area"><div id="stick-1" class="stick"></div></div>
+    </div>
+</div>
+
+<script>
+    function update() {
+        const gamepads = navigator.getGamepads();
+        if (gamepads[0]) {
+            const gp = gamepads[0];
+
+            gp.buttons.forEach((btn, i) => {
+                const el = document.getElementById(`btn-${i}`);
+                if (el) {
+                    if (btn.pressed) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
+            });
+
+            // Analógicos + Lógica L3/R3 integrada no próprio stick
+            updateStick('stick-0', gp.axes[0], gp.axes[1], gp.buttons[10].pressed); 
+            updateStick('stick-1', gp.axes[2], gp.axes[3], gp.buttons[11].pressed);
+        }
+        requestAnimationFrame(update);
+    }
+
+    function updateStick(id, x, y, isPressed) {
+        const stick = document.getElementById(id);
+        const moveMax = 30; 
+        stick.style.transform = `translate(${x * moveMax}px, ${y * moveMax}px)`;
+        
+        if (isPressed) {
+            stick.classList.add('active');
+        } else {
+            stick.classList.remove('active');
+        }
+    }
+
+    window.addEventListener("gamepadconnected", () => {
+        document.body.style.background = "rgba(0,0,0,0.1)"; 
+        update();
+    });
+</script>
+</body>
+</html>
