@@ -18,6 +18,17 @@
         .save-btn { background: #28a745; }
         .reset-btn { background: #dc3545; }
 
+        /* Botão de Trava Invisível no Centro do Topo */
+        #lock-btn {
+            position: fixed; 
+            top: 10px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            z-index: 1001;
+            opacity: 0; /* Totalmente invisível */
+            cursor: pointer;
+        }
+
         /* Grupos e Botões */
         .group { position: absolute; touch-action: none; display: flex; align-items: center; justify-content: center; z-index: 20; }
         .btn-core {
@@ -33,6 +44,8 @@
     </style>
 </head>
 <body>
+
+<div id="lock-btn" class="btn-core" onclick="toggleLock()">L</div>
 
 <div id="edit-menu">
     <button class="menu-btn save-btn" onclick="confirmSave()">SALVAR</button>
@@ -68,6 +81,18 @@
     const groups = document.querySelectorAll('.group');
     const menu = document.getElementById('edit-menu');
     let hasChanged = false;
+    let isLocked = false; 
+
+    function toggleLock() {
+        isLocked = !isLocked;
+        if (isLocked) {
+            menu.classList.remove('show');
+            // Feedback visual rápido apenas para você saber que travou (opcional)
+            console.log("Layout Travado");
+        } else {
+            console.log("Layout Liberado");
+        }
+    }
 
     window.onload = () => {
         groups.forEach(el => {
@@ -83,6 +108,7 @@
     };
 
     function showMenu() {
+        if (isLocked) return;
         hasChanged = true;
         menu.classList.add('show');
     }
@@ -97,6 +123,7 @@
         });
         menu.classList.remove('show');
         hasChanged = false;
+        isLocked = true; // Trava após salvar
     }
 
     function resetLayout() {
@@ -108,13 +135,14 @@
         let isDragging = false;
 
         el.onpointerdown = (e) => {
+            if (isLocked) return; 
             isDragging = true;
             el.setPointerCapture(e.pointerId);
             showMenu();
         };
 
         el.onpointermove = (e) => {
-            if (!isDragging) return;
+            if (!isDragging || isLocked) return;
             el.style.left = (el.offsetLeft + e.movementX) + 'px';
             el.style.top = (el.offsetTop + e.movementY) + 'px';
             el.style.right = 'auto';
@@ -124,6 +152,7 @@
         el.onpointerup = () => isDragging = false;
 
         el.addEventListener('dblclick', () => {
+            if (isLocked) return;
             showMenu();
             let s = parseFloat(el.dataset.scale || 1);
             s += 0.2;
