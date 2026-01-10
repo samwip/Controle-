@@ -3,13 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>Gamepad Overlay Custom</title>
     <style>
-        body { background: transparent; margin: 0; overflow: hidden; font-family: sans-serif; user-select: none; color: white; width: 100vw; height: 100vh; }
+        /* Garantindo transparência total para o OBS/TikTok Studio */
+        html, body { 
+            background: transparent !important; 
+            margin: 0; 
+            padding: 0;
+            overflow: hidden; 
+            font-family: sans-serif; 
+            user-select: none; 
+            width: 100vw; 
+            height: 100vh; 
+        }
         
-        /* Menu flutuante que aparece ao editar */
         #edit-menu {
             position: fixed; top: -60px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; background: rgba(0,0,0,0.8); padding: 10px 20px;
+            display: flex; gap: 15px; background: rgba(0,0,0,0.9); padding: 10px 20px;
             border-radius: 0 0 15px 15px; border: 1px solid #00a2ff; z-index: 1000;
             transition: top 0.3s ease;
         }
@@ -18,34 +28,36 @@
         .save-btn { background: #28a745; }
         .reset-btn { background: #dc3545; }
 
-        /* Botão de Trava Invisível no Centro do Topo */
         #lock-btn {
-            position: fixed; 
-            top: 10px; 
-            left: 50%; 
-            transform: translateX(-50%);
-            z-index: 1001;
-            opacity: 0; /* Totalmente invisível */
-            cursor: pointer;
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 1001; opacity: 0; cursor: pointer; width: 40px; height: 20px;
         }
 
-        /* Grupos e Botões */
         .group { position: absolute; touch-action: none; display: flex; align-items: center; justify-content: center; z-index: 20; }
         .btn-core {
             display: flex; align-items: center; justify-content: center;
-            background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.4);
+            background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.5);
             font-weight: bold; border-radius: 50%; width: 60px; height: 60px;
+            transition: background 0.1s, transform 0.05s;
         }
         .dpad-grid, .action-grid { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 10px; }
-        .rect { border-radius: 8px; width: 70px; height: 35px; font-size: 10px; position: absolute; background: rgba(0, 0, 0, 0.3); border: 2px solid rgba(255, 255, 255, 0.4); display: flex; align-items: center; justify-content: center; }
-        .active { background: rgba(0, 162, 255, 0.8) !important; border-color: #00f2ff !important; box-shadow: 0 0 15px #0096ff; }
-        .stick-area { width: 100px; height: 100px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 50%; position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.3); }
-        .stick { width: 40%; height: 40%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none; }
+        .rect { border-radius: 8px; width: 70px; height: 35px; font-size: 11px; position: absolute; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 255, 255, 0.5); display: flex; align-items: center; justify-content: center; }
+        
+        /* Estilo quando o botão é pressionado */
+        .active { 
+            background: rgba(0, 162, 255, 0.9) !important; 
+            border-color: #00f2ff !important; 
+            box-shadow: 0 0 20px #0096ff;
+            transform: scale(1.1);
+        }
+
+        .stick-area { width: 100px; height: 100px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 50%; position: absolute; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.2); }
+        .stick { width: 40px; height: 40px; background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.6); border-radius: 50%; pointer-events: none; position: absolute; }
     </style>
 </head>
 <body>
 
-<div id="lock-btn" class="btn-core" onclick="toggleLock()">L</div>
+<div id="lock-btn" onclick="toggleLock()"></div>
 
 <div id="edit-menu">
     <button class="menu-btn save-btn" onclick="confirmSave()">SALVAR</button>
@@ -80,18 +92,12 @@
 <script>
     const groups = document.querySelectorAll('.group');
     const menu = document.getElementById('edit-menu');
-    let hasChanged = false;
-    let isLocked = false; 
+    let isLocked = true; 
 
     function toggleLock() {
         isLocked = !isLocked;
-        if (isLocked) {
-            menu.classList.remove('show');
-            // Feedback visual rápido apenas para você saber que travou (opcional)
-            console.log("Layout Travado");
-        } else {
-            console.log("Layout Liberado");
-        }
+        if (!isLocked) menu.classList.add('show');
+        else menu.classList.remove('show');
     }
 
     window.onload = () => {
@@ -105,13 +111,9 @@
                 el.dataset.scale = config.scale || 1;
             }
         });
+        // Inicia o loop de verificação imediatamente
+        requestAnimationFrame(update);
     };
-
-    function showMenu() {
-        if (isLocked) return;
-        hasChanged = true;
-        menu.classList.add('show');
-    }
 
     function confirmSave() {
         groups.forEach(el => {
@@ -121,9 +123,8 @@
                 scale: el.dataset.scale || 1
             }));
         });
+        isLocked = true;
         menu.classList.remove('show');
-        hasChanged = false;
-        isLocked = true; // Trava após salvar
     }
 
     function resetLayout() {
@@ -131,60 +132,77 @@
         location.reload();
     }
 
+    // Lógica de Arrastar (Drag and Drop)
     groups.forEach(el => {
         let isDragging = false;
-
         el.onpointerdown = (e) => {
             if (isLocked) return; 
             isDragging = true;
             el.setPointerCapture(e.pointerId);
-            showMenu();
         };
-
         el.onpointermove = (e) => {
             if (!isDragging || isLocked) return;
             el.style.left = (el.offsetLeft + e.movementX) + 'px';
             el.style.top = (el.offsetTop + e.movementY) + 'px';
-            el.style.right = 'auto';
-            el.style.bottom = 'auto';
+            el.style.right = 'auto'; el.style.bottom = 'auto';
         };
-
         el.onpointerup = () => isDragging = false;
 
         el.addEventListener('dblclick', () => {
             if (isLocked) return;
-            showMenu();
             let s = parseFloat(el.dataset.scale || 1);
-            s += 0.2;
-            if (s > 2) s = 0.6; 
+            s = s >= 2 ? 0.6 : s + 0.2;
             el.dataset.scale = s;
             el.style.transform = `scale(${s})`;
         });
     });
 
+    // FUNÇÃO DE ATUALIZAÇÃO (CORE)
     function update() {
+        // navigator.getGamepads() precisa ser chamado a cada frame em alguns navegadores
         const gps = navigator.getGamepads();
-        if (gps[0]) {
-            const gp = gps[0];
+        const gp = gps[0] || gps[1] || gps[2] || gps[3]; // Pega o primeiro controle ativo
+
+        if (gp) {
+            // Atualiza botões
             gp.buttons.forEach((btn, i) => {
                 const el = document.getElementById(`btn-${i}`);
-                if (el) btn.pressed ? el.classList.add('active') : el.classList.remove('active');
+                if (el) {
+                    if (btn.pressed || btn.value > 0.1) {
+                        el.classList.add('active');
+                    } else {
+                        el.classList.remove('active');
+                    }
+                }
             });
-            updateStick('stick-0', gp.axes[0], gp.axes[1], gp.buttons[10].pressed); 
-            updateStick('stick-1', gp.axes[2], gp.axes[3], gp.buttons[11].pressed);
+
+            // Atualiza Analógicos com Deadzone de 0.1 para evitar trepidação
+            updateStick('stick-0', gp.axes[0], gp.axes[1]); 
+            updateStick('stick-1', gp.axes[2], gp.axes[3]);
         }
+        
         requestAnimationFrame(update);
     }
 
-    function updateStick(id, x, y, isPressed) {
+    function updateStick(id, x, y) {
         const stick = document.getElementById(id);
         if (stick) {
-            stick.style.transform = `translate(${x * 20}px, ${y * 20}px)`;
-            isPressed ? stick.classList.add('active') : stick.classList.remove('active');
+            const threshold = 0.1;
+            const posX = Math.abs(x) > threshold ? x * 30 : 0;
+            const posY = Math.abs(y) > threshold ? y * 30 : 0;
+            stick.style.transform = `translate(${posX}px, ${posY}px)`;
+            
+            // Ativa brilho se o analógico for movido
+            if (Math.abs(x) > threshold || Math.abs(y) > threshold) {
+                stick.style.borderColor = "#00f2ff";
+                stick.style.background = "rgba(0, 162, 255, 0.5)";
+            } else {
+                stick.style.borderColor = "rgba(255,255,255,0.6)";
+                stick.style.background = "rgba(255,255,255,0.3)";
+            }
         }
     }
-
-    window.addEventListener("gamepadconnected", update);
 </script>
 </body>
-</html>
+                                                                    </html>
+                                                                    
